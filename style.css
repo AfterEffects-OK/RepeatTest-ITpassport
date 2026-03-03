@@ -139,7 +139,7 @@ canvas {
 }
 
 #lock-status {
-    font-size: 20px;
+    font-size: 25px;
     font-weight: bold;
     display: block;
     transition: color 0.2s;
