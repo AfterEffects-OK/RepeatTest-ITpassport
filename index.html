@@ -672,8 +672,9 @@ function gameLoop() {
                 const en = enemies[ei];
                 const p = en.getPos(); const hw = (en.w * p.s)/2, hh = (en.h * p.s)/2;
                 if (b.tx > p.x-hw && b.tx < p.x+hw && b.ty > p.y-hh && b.ty < p.y+hh) {
-                    bullets.splice(bi, 1); shotsHit++;
+                    bullets.splice(bi, 1);
                     if (en.isCorrect) { 
+                        shotsHit++;
                         let points = 0;
                         if (en.z > 1.2) points = 50;
                         else if (en.z > 0.6) points = 100;
