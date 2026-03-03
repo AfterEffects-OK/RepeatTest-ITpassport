@@ -609,8 +609,8 @@ async function initializeApp() {
     } catch (error) {
         console.error('クイズデータの読み込みに失敗しました:', error);
         document.getElementById('overlay-title').innerText = 'LOAD ERROR';
-        const startForm = document.getElementById('start-form');
-        startForm.innerHTML = `<p style="color:var(--danger); font-size: 12px; text-align: center;">クイズデータの読み込みに失敗しました。<br><br>・GASのデプロイ設定<br>・スプレッドシートの「問題集」シート<br><br>などを確認してください。</p>`;
+        const errorMessage = error.message || '不明なエラーが発生しました。';
+        startForm.innerHTML = `<p style="color:var(--danger); font-size: 12px; text-align: center; line-height: 1.6;">クイズデータの読み込みに失敗しました。<br><br>【考えられる原因】<br>1. GASのデプロイが最新でない<br>2. シート名が「問題集」でない<br>3. スプレッドシートのアクセス権限がない<br><br>詳細は開発者コンソール(F12)を確認してください。<br><br><span style="font-size:10px; color: rgba(255,255,255,0.5);">エラー: ${errorMessage}</span></p>`;
     }
 }
 
