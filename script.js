@@ -280,6 +280,13 @@ function gameLoop() {
             nextQuestion();
         }
 
+        // 敵を描画します
+        enemies.forEach((en) => {
+            if (en.z > maxZ) maxZ = en.z;
+            en.draw();
+        });
+
+        // 距離インジケーターを更新
         distanceBarFill.style.width = Math.min(100, (maxZ / 2.0) * 100) + "%";
         if (maxZ > 1.2) { 
             distanceBarFill.style.background = "var(--danger)"; 
@@ -297,12 +304,6 @@ function gameLoop() {
             bodyMain.classList.remove('warning-active'); 
             Sound.stopEmergency(); 
         }
-
-        // 敵を描画します
-        enemies.forEach((en) => {
-            if (en.z > maxZ) maxZ = en.z;
-            en.draw();
-        });
 
         // 弾丸のループを逆順に変更 (削除時のインデックスずれ防止)
         for (let bi = bullets.length - 1; bi >= 0; bi--) {
