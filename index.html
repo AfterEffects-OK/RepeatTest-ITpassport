@@ -122,9 +122,15 @@
         </div>
 
         <div id="ranking-overlay" class="hidden" style="width: 600px; max-width: 90vw; border: 1px solid var(--secondary); padding: 25px; background: rgba(0,20,40,0.95); box-shadow: 0 0 40px var(--ui-glow);">
-            <h1 style="letter-spacing: 5px; color: var(--secondary); margin-top: 0; text-align: center;">LEADERBOARD</h1>
-            <div id="ranking-list-container" style="height: 60vh; overflow-y: auto; padding-right: 10px;">
-                <!-- Ranking will be loaded here -->
+            <div class="tab-buttons">
+                <button id="leaderboard-tab-btn" class="tab-btn active">LEADERBOARD</button>
+                <button id="my-scores-tab-btn" class="tab-btn">MY SCORES</button>
+            </div>
+            <div id="leaderboard-content" class="tab-content active">
+                <div id="ranking-list-container" class="ranking-container"></div>
+            </div>
+            <div id="my-scores-content" class="tab-content">
+                <div id="my-scores-list-container" class="ranking-container"></div>
             </div>
             <button id="back-from-ranking-btn" class="btn" style="margin-top: 20px;">BACK</button>
         </div>

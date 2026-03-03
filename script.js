@@ -82,6 +82,7 @@ const radarBlipsEl = document.getElementById('radar-blips');
 const startForm = document.getElementById('start-form');
 const rankingOverlay = document.getElementById('ranking-overlay');
 const rankingListContainer = document.getElementById('ranking-list-container');
+const myScoresListContainer = document.getElementById('my-scores-list-container');
 
 let width, height;
 let player = null, bullets = [], enemies = [];
@@ -489,62 +490,78 @@ function openReviewModal(index) {
  */
 async function fetchAndRenderRanking() {
     rankingListContainer.innerHTML = `<p style="text-align: center; color: var(--secondary);">LOADING RANKING...</p>`;
+    myScoresListContainer.innerHTML = `<p style="text-align: center; color: var(--secondary);">LOADING MY SCORES...</p>`;
     try {
         // type=rankingパラメータを付与してGETリクエストを送信
         const response = await fetch(GAS_WEB_APP_URL + '?type=ranking');
         if (!response.ok) throw new Error('Failed to load ranking data.');
         const scores = await response.json();
 
+        // 全体のリーダーボードを処理
         if (!Array.isArray(scores) || scores.length === 0) {
             rankingListContainer.innerHTML = '<p style="text-align: center;">NO RANKING DATA AVAILABLE.</p>';
-            return;
-        }
+        } else {
+            // プレイヤーごとの最高スコアを抽出
+            const bestScores = {};
+            scores.forEach(score => {
+                // データ型を数値に統一
+                score.score = Number(score.score) || 0;
+                score.accuracy = Number(score.accuracy) || 0;
+                score.hits = Number(score.hits) || 0;
 
-        // プレイヤーごとの最高スコアを抽出
-        const bestScores = {};
-        scores.forEach(score => {
-            // データ型を数値に統一
-            score.score = Number(score.score) || 0;
-            score.accuracy = Number(score.accuracy) || 0;
-            score.hits = Number(score.hits) || 0;
+                // プレイヤーを一意に識別するキーを作成
+                const playerKey = `${score.name || 'GUEST'}|${score.email || ''}`;
+                const existing = bestScores[playerKey];
 
-            // プレイヤーを一意に識別するキーを作成
-            const playerKey = `${score.name || 'GUEST'}|${score.email || ''}`;
-            const existing = bestScores[playerKey];
-
-            if (!existing) {
-                bestScores[playerKey] = score;
-            } else {
-                // より良いスコアか判定
-                if (score.score > existing.score) {
+                if (!existing) {
                     bestScores[playerKey] = score;
-                } else if (score.score === existing.score) {
-                    if (score.accuracy > existing.accuracy) {
+                } else {
+                    // より良いスコアか判定
+                    if (score.score > existing.score) {
                         bestScores[playerKey] = score;
-                    } else if (score.accuracy === existing.accuracy && score.hits > existing.hits) {
-                        bestScores[playerKey] = score;
+                    } else if (score.score === existing.score) {
+                        if (score.accuracy > existing.accuracy) {
+                            bestScores[playerKey] = score;
+                        } else if (score.accuracy === existing.accuracy && score.hits > existing.hits) {
+                            bestScores[playerKey] = score;
+                        }
                     }
                 }
+            });
+
+            // 最終的なランキングリストをソート
+            const rankedList = Object.values(bestScores).sort((a, b) => {
+                if (b.score !== a.score) return b.score - a.score;
+                if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
+                return b.hits - a.hits;
+            });
+
+            // HTMLを生成して表示
+            renderRanking(rankedList, rankingListContainer);
+        }
+
+        // 個人のスコア履歴を処理
+        const currentPilotEmail = document.getElementById('input-email').value;
+        if (currentPilotEmail) {
+            const myScores = scores.filter(score => score.email === currentPilotEmail)
+                                   .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp)); // 新しい順
+            if (myScores.length > 0) {
+                renderMyScores(myScores);
+            } else {
+                myScoresListContainer.innerHTML = '<p style="text-align: center;">YOUR SCORE HISTORY IS EMPTY.</p>';
             }
-        });
-
-        // 最終的なランキングリストをソート
-        const rankedList = Object.values(bestScores).sort((a, b) => {
-            if (b.score !== a.score) return b.score - a.score;
-            if (b.accuracy !== a.accuracy) return b.accuracy - a.accuracy;
-            return b.hits - a.hits;
-        });
-
-        // HTMLを生成して表示
-        renderRanking(rankedList);
+        } else {
+            myScoresListContainer.innerHTML = '<p style="text-align: center;">ENTER YOUR EMAIL TO SEE YOUR SCORE HISTORY.</p>';
+        }
 
     } catch (error) {
         console.error('Ranking fetch error:', error);
         rankingListContainer.innerHTML = `<p style="text-align: center; color: var(--danger);">FAILED TO LOAD RANKING</p>`;
+        myScoresListContainer.innerHTML = `<p style="text-align: center; color: var(--danger);">FAILED TO LOAD YOUR SCORES</p>`;
     }
 }
 
-function renderRanking(rankedList) {
+function renderRanking(rankedList, container) {
     let html = `
         <div class="ranking-table">
             <div class="ranking-header">
@@ -563,7 +580,27 @@ function renderRanking(rankedList) {
             `).join('')}
         </div>
     `;
-    rankingListContainer.innerHTML = html;
+    container.innerHTML = html;
+}
+
+function renderMyScores(myScores) {
+    let html = `
+        <div class="ranking-table">
+            <div class="ranking-header" style="grid-template-columns: 4fr 3fr 3fr;">
+                <div>TIMESTAMP</div>
+                <div>SCORE</div>
+                <div>ACCURACY</div>
+            </div>
+            ${myScores.map(p => `
+                <div class="ranking-row" style="grid-template-columns: 4fr 3fr 3fr;">
+                    <div>${p.timestamp}</div>
+                    <div>${p.score}</div>
+                    <div>${p.accuracy}%</div>
+                </div>
+            `).join('')}
+        </div>
+    `;
+    myScoresListContainer.innerHTML = html;
 }
 
 async function initializeApp() {
@@ -639,6 +676,22 @@ function hideRanking() {
     startForm.classList.remove('hidden');
 }
 
+function setupTabs() {
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabButtons.forEach(button => {
+        button.addEventListener('click', () => {
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            tabContents.forEach(content => content.classList.remove('active'));
+
+            button.classList.add('active');
+            const contentId = button.id.replace('-tab-btn', '-content');
+            document.getElementById(contentId).classList.add('active');
+        });
+    });
+}
+
 document.getElementById('start-btn').addEventListener('click', () => {
     if (!quizDataLoaded) {
         alert('クイズデータをロード中です。しばらく待ってからもう一度お試しください。');
@@ -691,4 +744,5 @@ const savedEmail = localStorage.getItem('pilotEmail');
 if (savedName) document.getElementById('input-name').value = savedName;
 if (savedEmail) document.getElementById('input-email').value = savedEmail;
 
+setupTabs();
 initializeApp(); // クイズデータの読み込みを開始

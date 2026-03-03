@@ -375,12 +375,47 @@ canvas {
     border-left-color: var(--primary);
 }
 
+.tab-buttons {
+    display: flex;
+    border-bottom: 1px solid var(--secondary);
+    margin-bottom: 20px;
+}
+
+.tab-btn {
+    flex: 1;
+    padding: 10px 15px;
+    background: transparent;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: all 0.3s;
+    font-size: 16px;
+    letter-spacing: 2px;
+}
+
+.tab-btn.active {
+    color: var(--secondary);
+    background: rgba(79, 172, 254, 0.1);
+    border-bottom: 2px solid var(--secondary);
+}
+
+.tab-content {
+    display: none;
+}
+.tab-content.active {
+    display: block;
+}
 .ranking-table {
     width: 100%;
     display: flex;
     flex-direction: column;
     font-size: 16px;
     text-align: left;
+}
+.ranking-container {
+    height: 60vh;
+    overflow-y: auto;
+    padding-right: 10px;
 }
 
 .ranking-header, .ranking-row {
