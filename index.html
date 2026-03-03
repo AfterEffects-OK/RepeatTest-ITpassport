@@ -494,13 +494,9 @@ const Sound = {
     }
 };
 
-const quizBank = [
-    { q: "日本の首都は？", a: "TOKYO", d: ["OSAKA", "KYOTO", "YOKOHAMA"] },
-    { q: "太陽系最大の惑星は？", a: "JUPITER", d: ["EARTH", "SATURN", "MARS"] },
-    { q: "1 + 1 × 2 = ?", a: "3", d: ["4", "2", "1"] },
-    { q: "水の化学記号は？", a: "H2O", d: ["CO2", "O2", "HO"] },
-    { q: "世界で最も高い山は？", a: "EVEREST", d: ["K2", "FUJI", "ALPS"] }
-];
+// スプレッドシートから読み込んだクイズデータを格納する
+let quizBank = [];
+let quizDataLoaded = false;
 
 const canvas = document.getElementById('gameCanvas');
 const ctx = canvas.getContext('2d');
@@ -525,7 +521,7 @@ let width, height;
 let player = null, bullets = [], enemies = [];
 let score = 0, lives = 3, startTime = 0, gameElapsedTime = 0;
 let shotsFired = 0, shotsHit = 0, resolvedQuizzes = 0;
-let currentQuiz = null, gameState = 'START';
+let currentQuiz = {}, gameState = 'START';
 let lastShotTime = 0;
 let pilotEmail = "";
 const shotCooldown = 250;
@@ -619,7 +615,28 @@ function initGame() {
 }
 
 function nextQuestion() {
-    currentQuiz = quizBank[Math.floor(Math.random() * quizBank.length)]; questionEl.innerText = currentQuiz.q; enemies = [];
+    if (quizBank.length === 0) {
+        questionEl.innerText = "利用可能なクイズがありません。";
+        return;
+    }
+    // スプレッドシートから読み込んだデータからランダムに1つ問題を選ぶ
+    const quizFromSheet = quizBank[Math.floor(Math.random() * quizBank.length)];
+    
+    // 15個以上の不正解プールからランダムに3つを抽出する
+    const shuffledDistractors = quizFromSheet.distractorPool.sort(() => 0.5 - Math.random());
+    const selectedDistractors = shuffledDistractors.slice(0, 3);
+
+    // 現在の質問オブジェクトを生成
+    currentQuiz = {
+        q: quizFromSheet.q,
+        a: quizFromSheet.a,
+        d: selectedDistractors,
+        explanation: quizFromSheet.explanation, // 解説とカテゴリも保持
+        category: quizFromSheet.category
+    };
+
+    questionEl.innerText = currentQuiz.q; 
+    enemies = [];
     const opts = [currentQuiz.a, ...currentQuiz.d].sort(() => Math.random() - 0.5); const dirs = [{c:-1,r:-1}, {c:1,r:-1}, {c:-1,r:1}, {c:1,r:1}];
     opts.forEach((o, i) => enemies.push(new Enemy(o, o === currentQuiz.a, dirs[i].c, dirs[i].r)));
 }
@@ -768,6 +785,7 @@ function showGameOver() {
     // バックエンドに送信するスコアデータを作成
     const finalScoreData = {
         name: pilotDisplay.innerText,
+        email: pilotEmail,
         score: score,
         elapsedTime: timerEl.innerText,
         accuracy: acc,
@@ -781,6 +799,32 @@ function showGameOver() {
     }, 100);
 }
 
+async function initializeApp() {
+    const startBtn = document.getElementById('start-btn');
+    startBtn.disabled = true;
+    startBtn.innerText = 'LOADING QUIZ DATA...';
+
+    const url = GAS_WEB_APP_URL + '?type=quiz';
+    try {
+        const response = await fetch(url);
+        if (!response.ok) throw new Error('Network response was not ok');
+        const data = await response.json();
+        if (data.error) throw new Error(data.error);
+        
+        quizBank = data;
+        quizDataLoaded = true;
+        console.log(`${quizBank.length}件のクイズをスプレッドシートから読み込みました。`);
+        
+        startBtn.disabled = false;
+        startBtn.innerText = 'INITIALIZE SYSTEM';
+    } catch (error) {
+        console.error('クイズデータの読み込みに失敗しました:', error);
+        document.getElementById('overlay-title').innerText = 'LOAD ERROR';
+        const startForm = document.getElementById('start-form');
+        startForm.innerHTML = `<p style="color:var(--danger); font-size: 12px; text-align: center;">クイズデータの読み込みに失敗しました。<br><br>・GASのデプロイ設定<br>・スプレッドシートの「問題集」シート<br><br>などを確認してください。</p>`;
+    }
+}
+
 function shoot() {
     if (gameState !== 'PLAYING' || Date.now() - lastShotTime < shotCooldown) return;
     bullets.push(new Bullet(player.x, player.y)); shotsFired++;
@@ -788,18 +832,51 @@ function shoot() {
 }
 
 function resize() { width = window.innerWidth; height = window.innerHeight; canvas.width = width; canvas.height = height; initStars(); }
+
+// --- イベントリスナーと初期化 ---
+
 window.addEventListener('resize', resize);
 window.addEventListener('mousemove', e => { if (player) { player.targetX = e.clientX; player.targetY = e.clientY; } });
 window.addEventListener('mousedown', e => { if (gameState === 'PLAYING' && !e.target.closest('.btn') && !e.target.closest('input')) shoot(); });
+
 document.getElementById('start-btn').addEventListener('click', () => {
-    const nameVal = document.getElementById('input-name').value || 'GUEST';
-    pilotEmail = document.getElementById('input-email').value || '';
+    if (!quizDataLoaded) {
+        alert('クイズデータをロード中です。しばらく待ってからもう一度お試しください。');
+        return;
+    }
+    const nameInput = document.getElementById('input-name');
+    const emailInput = document.getElementById('input-email');
+    const nameVal = nameInput.value || 'GUEST';
+    pilotEmail = emailInput.value || '';
+    
+    // 情報を保存
+    localStorage.setItem('pilotName', nameInput.value);
+    localStorage.setItem('pilotEmail', pilotEmail);
+
     pilotDisplay.innerText = nameVal.toUpperCase();
     if (audioCtx.state === 'suspended') audioCtx.resume(); 
     initGame();
 });
-document.getElementById('restart-btn').addEventListener('click', initGame);
-resize(); requestAnimationFrame(gameLoop);
+
+document.getElementById('restart-btn').addEventListener('click', () => {
+    // ゲームオーバー画面からリスタートする際は、名前入力画面に戻さず即再開
+    overlay.classList.add('hidden');
+    document.getElementById('stats-overlay').classList.add('hidden');
+    initGame();
+});
+
+// --- アプリケーション起動 ---
+
+resize();
+requestAnimationFrame(gameLoop);
+
+// 保存されたプレイヤー情報を読み込み
+const savedName = localStorage.getItem('pilotName');
+const savedEmail = localStorage.getItem('pilotEmail');
+if (savedName) document.getElementById('input-name').value = savedName;
+if (savedEmail) document.getElementById('input-email').value = savedEmail;
+
+initializeApp(); // クイズデータの読み込みを開始
 </script>
 </body>
 </html>
