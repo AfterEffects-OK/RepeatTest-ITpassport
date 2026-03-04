@@ -451,9 +451,12 @@ canvas {
 
 .tab-content {
     display: none;
+    flex: 1;
+    min-height: 0;
 }
 .tab-content.active {
-    display: block;
+    display: flex;
+    flex-direction: column;
 }
 .ranking-table {
     width: 100%;
@@ -463,9 +466,23 @@ canvas {
     text-align: left;
 }
 .ranking-container {
-    height: 60vh;
+    height: auto;
+    flex: 1;
     overflow-y: auto;
     padding-right: 10px;
+}
+
+#ranking-overlay {
+    width: 600px;
+    max-width: 90vw;
+    height: 80vh;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--secondary);
+    padding: 25px;
+    background: rgba(0,20,40,0.95);
+    box-shadow: 0 0 40px var(--ui-glow);
+    box-sizing: border-box;
 }
 
 .ranking-header, .ranking-row {
