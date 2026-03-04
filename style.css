@@ -222,25 +222,24 @@ canvas {
     z-index: 100;
 }
 
-/* メニュー全体のコンテナ */
-#menu-container {
-    width: 90%;
-    max-width: 600px;
-    display: flex;
-    flex-direction: column;
-    gap: 15px; /* ボタン間の間隔 */
-}
-
-/* ロゴをメニューコンテナの先頭に配置し、幅をボタンと一致させる */
-#menu-container::before {
+/* ロゴを表示（メニューボタンの上に配置） */
+#overlay::before {
     content: "";
     display: block;
-    width: 100%;
+    width: 90%;
+    max-width: 600px;
     height: 180px;
     background-image: url('https://raw.githubusercontent.com/AfterEffects-OK/RepeatTest-ITpassport/main/QuizBusters_LOGO.png');
     background-size: contain;
     background-repeat: no-repeat;
     background-position: center;
+    margin-bottom: 20px;
+}
+
+/* メニュー画面のボタン幅をロゴと合わせる */
+#overlay .btn {
+    width: 90%;
+    max-width: 600px;
 }
 
 #warning-vignette {
