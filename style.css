@@ -428,7 +428,6 @@ canvas {
 .tab-buttons {
     display: flex;
     border-bottom: 1px solid var(--secondary);
-    margin-bottom: 20px;
 }
 
 .tab-btn {
@@ -483,6 +482,7 @@ canvas {
     background: rgba(0,20,40,0.95);
     box-shadow: 0 0 40px var(--ui-glow);
     box-sizing: border-box;
+    gap: 20px; /* 子要素（タブ、リスト、ボタン）の間のスペースを確保 */
 }
 
 .ranking-header, .ranking-row {
