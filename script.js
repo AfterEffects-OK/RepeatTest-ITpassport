@@ -127,6 +127,12 @@ const MAX_LIVES = 3;
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwVjD65x3sD8ACec6Z2C2svyN959x-Ck2U2khZDy8oKC1YdppdpbcBVrcn4HSjkbmuD/exec';
 
 
+const bgm = new Audio('https://github.com/AfterEffects-OK/RepeatTest-ITpassport/raw/refs/heads/main/%E6%98%9F%E5%B1%91%E3%83%A1%E3%83%A2%E3%83%AA%E3%82%AA%E3%83%BC%E3%83%90%E3%83%BC.mp3');
+bgm.loop = true;
+bgm.volume = 0.3;
+
+
+
 let stars = [];
 const STAR_COUNT = 150;
 
@@ -228,6 +234,7 @@ function initGame() {
     startTime = Date.now(); gameState = 'PLAYING';
     overlay.classList.add('hidden'); document.getElementById('stats-overlay').classList.add('hidden'); document.getElementById('start-form').classList.add('hidden');
     accuracyMiniFill.style.width = "0%";
+    bgm.play().catch(e => console.error("BGMの再生に失敗しました:", e));
     nextQuestion();
 }
 
@@ -455,6 +462,10 @@ function showGameOver() {
     const statsContainer = document.getElementById('final-stats-container');
     const acc = shotsFired > 0 ? Math.round((shotsHit / shotsFired) * 100) : 0;
     
+    bgm.pause();
+    bgm.currentTime = 0;
+    
+    
     let reviewHtml = '';
     if (incorrectlyAnswered.length > 0) {
         reviewHtml = `
@@ -633,7 +644,7 @@ function renderRanking(rankedList, container) {
             </div>
             ${rankedList.map((p, index) => {
                 const isMyRank = (p.name === (currentPilotName || 'GUEST').toUpperCase() && p.email === currentPilotEmail);
-                return `<div class="ranking-row ${index === 0 ? 'top-rank' : ''} ${isMyRank ? 'my-rank' : ''}">
+                return `<div class="ranking-row ${isMyRank ? 'my-rank' : ''}">
                     <div>#${index + 1}</div>
                     <div class="ranking-pilot-name">${p.name || 'GUEST'}</div>
                     <div>${p.score}</div>
@@ -656,7 +667,6 @@ function renderMyScores(myScores) {
     }, null);
 
     let html = `
-        <div style="overflow-x: scroll;scrollbar-width: thin; scrollbar-color: var(--primary) transparent;">
         <div class="ranking-table">
             <div class="ranking-header" style="grid-template-columns: 4fr 2fr 2fr;">
                 <div>TIMESTAMP</div>
@@ -665,13 +675,12 @@ function renderMyScores(myScores) {
             </div>
             ${myScores.map(p => {
                 const isBest = (p === myBestScore);
-                return `<div class="ranking-row ${isBest ? 'my-best-score' : ''} " style="grid-template-columns: 4fr 2fr 2fr;">
+                return `<div class="ranking-row ${isBest ? 'my-best-score' : ''}" style="grid-template-columns: 4fr 2fr 2fr;">
                     <div>${p.timestamp}</div>
                     <div>${p.score}</div>
                     <div>${p.accuracy}%</div>
                 </div>
             `}).join('')}
-        </div>
         </div>
     `;
     myScoresListContainer.innerHTML = html;
@@ -760,10 +769,12 @@ function togglePause() {
         pauseStartTime = Date.now();
         document.getElementById('pause-overlay').classList.remove('hidden');
         Sound.stopEmergency();
+        bgm.pause();
     } else if (gameState === 'PAUSED') {
         gameState = 'PLAYING';
         startTime += (Date.now() - pauseStartTime);
         document.getElementById('pause-overlay').classList.add('hidden');
+        bgm.play().catch(e => console.error("BGMの再生に失敗しました:", e));
     }
 }
 
@@ -829,6 +840,8 @@ document.getElementById('back-to-start-btn').addEventListener('click', () => {
     document.getElementById('stats-overlay').classList.add('hidden');
     document.getElementById('start-form').classList.remove('hidden');
     gameState = 'START';
+    bgm.pause();
+    bgm.currentTime = 0;
 });
 
 document.getElementById('close-modal-btn').addEventListener('click', () => {
