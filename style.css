@@ -22,11 +22,29 @@ body, html {
     touch-action: none;
 }
 
+
+#pause-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0, 5, 10, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 90;
+    color: var(--primary);
+    font-size: 48px;
+    letter-spacing: 10px;
+    text-shadow: 0 0 20px var(--primary);
+    backdrop-filter: blur(5px);
+
+}
+
 #game-container {
     position: relative;
     width: 100vw;
     height: 100vh;
     display: flex;
+    max-width: 100%;
     justify-content: center;
     align-items: center;
     background: 
@@ -62,15 +80,31 @@ canvas {
 
 .top-hud {
     padding: 10px 30px;
+    font-size: 14px;
     display: grid;
-    grid-template-columns: repeat(7, 1fr);
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-rows: auto auto; /* 2 rows */    
     gap: 15px;
     align-items: stretch;
     background: linear-gradient(to bottom, rgba(0, 10, 20, 0.9) 0%, transparent 100%);
     border-bottom: 1px solid rgba(0, 242, 254, 0.3);
+    
+    /* Ensure content doesn't overflow */
+    box-sizing: border-box;
+    width: 100%;
 }
 
-.hud-module {
+.top-hud .hud-module.pilot-info {
+
+    grid-column: span 2;
+}
+
+.top-hud .hud-module.score-info {
+    grid-column: span 2;
+}
+.top-hud .hud-module.stats-info {
+
+     grid-column: span 4;
     background: rgba(0, 20, 40, 0.7);
     border: 1px solid rgba(0, 242, 254, 0.3);
     padding: 8px;
@@ -81,6 +115,15 @@ canvas {
     flex-direction: column;
     justify-content: center;
     min-width: 0;
+    flex-grow: 1;
+    display:flex;
+    flex-direction:row;
+    justify-content:space-between;
+    align-items: center;
+    align-content: space-around;
+    height:40px;
+
+
 }
 
 .hud-value {
@@ -99,6 +142,7 @@ canvas {
     color: var(--primary);
     letter-spacing: 1px;
     font-family: 'Orbitron', sans-serif, 'Courier New';
+        width: 100%;
 }
 
 .hud-module-large {
@@ -139,7 +183,7 @@ canvas {
 }
 
 #lock-status {
-    font-size: 25px;
+    font-size: 20px;
     font-weight: bold;
     display: block;
     transition: color 0.2s;
@@ -154,7 +198,7 @@ canvas {
     height: 150px;
     background: linear-gradient(to top, rgba(0, 10, 20, 0.9) 0%, transparent 100%);
     border-top: 1px solid rgba(0, 242, 254, 0.2);
-    padding: 10px 30px;
+    padding: 10px 10px;
     display: grid;
     grid-template-columns: 1fr 2fr 1.5fr;
     gap: 15px;
@@ -173,6 +217,7 @@ canvas {
 
 .bar-container {
     width: 100%;
+
     height: 8px;
     background: #111;
     margin-top: 5px;
@@ -258,6 +303,7 @@ canvas {
     padding: 15px;
     font-size: 18px;
     background: transparent;
+
     border: 1px solid var(--primary);
     color: var(--primary);
     cursor: pointer;
@@ -267,6 +313,16 @@ canvas {
 
 .btn:hover { background: var(--primary); color: #000; box-shadow: 0 0 30px var(--primary); }
 
+
+.btn:disabled,
+.btn[disabled],
+.btn[disabled]:hover {
+    background: transparent;
+    color: rgba(0, 242, 254, 0.4);
+    border-color: rgba(0, 242, 254, 0.4);
+    box-shadow: none;
+    cursor: wait;
+}
 /* 再出撃ボタン専用の赤く光るスタイル */
 #restart-btn {
     border-color: var(--danger);
@@ -349,17 +405,21 @@ canvas {
 }
 
 /* ランキング画面のスクロールバー */
-#ranking-list-container::-webkit-scrollbar {
+#ranking-list-container::-webkit-scrollbar,
+#my-scores-list-container::-webkit-scrollbar {
     width: 8px;
 }
-#ranking-list-container::-webkit-scrollbar-track {
+#ranking-list-container::-webkit-scrollbar-track,
+#my-scores-list-container::-webkit-scrollbar-track {
     background: rgba(0,0,0,0.3);
 }
-#ranking-list-container::-webkit-scrollbar-thumb {
+#ranking-list-container::-webkit-scrollbar-thumb,
+#my-scores-list-container::-webkit-scrollbar-thumb {
     background: var(--secondary);
     border-radius: 4px;
 }
-#ranking-list-container::-webkit-scrollbar-thumb:hover {
+#ranking-list-container::-webkit-scrollbar-thumb:hover,
+#my-scores-list-container::-webkit-scrollbar-thumb:hover {
     background: #4fc3fe;
 }
 
@@ -374,6 +434,7 @@ canvas {
     box-shadow: -2px 0 10px var(--primary);
     border-left-color: var(--primary);
 }
+
 
 .tab-buttons {
     display: flex;
@@ -405,6 +466,7 @@ canvas {
 .tab-content.active {
     display: block;
 }
+
 .ranking-table {
     width: 100%;
     display: flex;
@@ -421,7 +483,7 @@ canvas {
 .ranking-header, .ranking-row {
     display: grid;
     grid-template-columns: 1fr 5fr 3fr 3fr;
-    gap: 10px;
+    gap: 5px;
     padding: 12px 10px;
     border-bottom: 1px solid rgba(79, 172, 254, 0.2);
     align-items: center;
@@ -436,7 +498,7 @@ canvas {
     padding-bottom: 8px;
 }
 
-.ranking-row:first-of-type {
+#leaderboard-content .ranking-header + .ranking-row {
     font-weight: bold;
     color: var(--warning);
     background: rgba(255, 204, 0, 0.05);
@@ -444,8 +506,61 @@ canvas {
     transform: scale(1.02);
 }
 
+.ranking-row.my-best-score {
+    font-weight: bold;
+    color: var(--warning);
+    background: rgba(255, 204, 0, 0.05);
+    border-left: 2px solid var(--warning);
+    transform: scale(1.01);
+}
+
+.ranking-row.my-rank {
+    background: rgba(0, 242, 254, 0.1);
+    border: 1px solid var(--primary);
+    box-shadow: 0 0 15px var(--ui-glow);
+}
+
+#ranking-overlay .ranking-table .ranking-row div:nth-child(3), #ranking-overlay .ranking-table .ranking-row div:nth-child(2) {
+    font-size: 20px;
+    font-weight: bold;
+    color: var(--primary);
+}
+
 .ranking-pilot-name {
+    font-size: 18px;
+    font-weight: bold;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+}
+
+@keyframes bonus-pop {
+    0% { opacity: 0; transform: translate(-50%, -50%) scale(0.5); }
+    20% { opacity: 1; transform: translate(-50%, -50%) scale(1.5); }
+    80% { opacity: 1; transform: translate(-50%, -50%) scale(1.2); }
+    100% { opacity: 0; transform: translate(-50%, -50%) scale(2.0); }
+}
+
+.bonus-effect {
+    position: absolute;
+    top: 35%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-family: 'Orbitron', sans-serif;
+    font-size: 48px;
+    font-weight: bold;
+    color: var(--warning);
+    text-shadow: 0 0 20px var(--warning), 0 0 40px var(--danger);
+    pointer-events: none;
+    z-index: 50;
+}
+
+@media (max-width: 600px) {
+    .form-input {
+        font-size: 16px;
+        padding: 12px;
+    }
+    .btn {
+        font-size: 16px;
+    }
 }

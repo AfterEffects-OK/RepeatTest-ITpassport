@@ -9,47 +9,48 @@
 <body id="body-main">
 
 <div id="game-container">
+    <div id="pause-overlay" class="hidden">
+        <h1>PAUSED</h1>
+    </div>
     <div id="warning-vignette"></div>
     <canvas id="gameCanvas"></canvas>
     
     <div id="ui-layer">
         <div class="top-hud">
-            <div class="hud-module">
+            <div class="hud-module pilot-info">
                 <span class="label">PILOT_ID</span>
                 <span id="pilot-name-display" class="hud-value hud-value-pilot">GUEST</span>
             </div>
             
-            <div class="hud-module hud-module-large" style="color: var(--success);">
-                <span class="label">MISSION_TIME</span>
-                <span id="timer-display" class="hud-value hud-value-large">00:00</span>
+             <div class="hud-module hud-module-large score-info" style="color: var(--primary);">
+                <span class="label">SYS_SCORE</span>
+                <span id="score-display" class="hud-value hud-value-large">000000</span>
             </div>
-
-            <div class="hud-module">
+            <div class="hud-module stats-info">
                 <span class="label">AIM_COORD</span>
                 <span id="aim-display" class="hud-value">X:0 Y:0</span>
                 <span id="lock-status" class="no-lock">---</span>
-            </div>
             
-            <div class="hud-module">
+             </div>
+             <div class = "hud-module shots-info">
                 <span class="label">SHOTS</span>
                 <span id="shots-count" class="hud-value">000</span>
-            </div>
-            <div class="hud-module">
+             </div>
+               <div class = "hud-module hits-info">
+            
+            
                 <span class="label">HITS</span>
                 <span id="hits-count" class="hud-value">000</span>
-            </div>
-            <div class="hud-module">
+            
+            
                 <span class="label">ACCURACY</span>
+            </div>
+            <div class = "hud-module accuracy-info">
                 <span id="accuracy-rate" class="hud-value">0%</span>
                 <div class="accuracy-mini-graph">
                     <div id="accuracy-mini-fill" class="accuracy-mini-fill"></div>
                 </div>
-            </div>
-
-            <div class="hud-module hud-module-large" style="color: var(--primary);">
-                <span class="label">SYS_SCORE</span>
-                <span id="score-display" class="hud-value hud-value-large">000000</span>
-            </div>
+            
         </div>
         
         <div class="bottom-hud">

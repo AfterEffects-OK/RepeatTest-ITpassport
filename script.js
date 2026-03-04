@@ -35,6 +35,33 @@ const Sound = {
         osc.connect(gain); gain.connect(audioCtx.destination);
         osc.start(); osc.stop(audioCtx.currentTime + 0.3);
     },
+    playBonus: () => {
+        const now = audioCtx.currentTime;
+        [523.25, 659.25, 783.99, 1046.50].forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sine';
+            osc.frequency.setValueAtTime(freq, now + i * 0.06);
+            gain.gain.setValueAtTime(0.1, now + i * 0.06);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.06 + 0.4);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(now + i * 0.06); osc.stop(now + i * 0.06 + 0.4);
+        });
+    },
+    playLifeUp: () => {
+        const now = audioCtx.currentTime;
+        const notes = [587.33, 783.99, 1174.66]; // D5, G5, D6
+        notes.forEach((freq, i) => {
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'triangle';
+            osc.frequency.setValueAtTime(freq, now + i * 0.1);
+            gain.gain.setValueAtTime(0.15, now + i * 0.1);
+            gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.1 + 0.3);
+            osc.connect(gain); gain.connect(audioCtx.destination);
+            osc.start(now + i * 0.1); osc.stop(now + i * 0.1 + 0.3);
+        });
+    },
     startEmergency: () => {
         if (emergencyOsc) return;
         emergencyOsc = audioCtx.createOscillator();
@@ -91,9 +118,11 @@ let shotsFired = 0, shotsHit = 0;
 let incorrectlyAnswered = [];
 let currentQuiz = {}, gameState = 'START';
 let selectedCategory = 'all';
+let pauseStartTime = 0;
 let lastShotTime = 0;
 let pilotEmail = "";
 const shotCooldown = 250;
+const MAX_LIVES = 3;
 // TODO: 上記の.gsファイルをデプロイして取得したウェブアプリのURLをここに設定してください。
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwVjD65x3sD8ACec6Z2C2svyN959x-Ck2U2khZDy8oKC1YdppdpbcBVrcn4HSjkbmuD/exec';
 
@@ -239,6 +268,11 @@ function nextQuestion() {
 }
 
 function gameLoop() {
+    if (gameState === 'PAUSED') {
+        requestAnimationFrame(gameLoop);
+        return;
+    }
+
     ctx.clearRect(0, 0, width, height); drawSpaceBackground();
     if (gameState === 'PLAYING') {
         gameElapsedTime = Date.now() - startTime; timerEl.innerText = formatTime(gameElapsedTime);
@@ -324,7 +358,30 @@ function gameLoop() {
                         else if (en.z > 0.6) points = 100;
                         else points = 180;
                         
+                        if (shotsHit > 0 && shotsHit % 20 === 0) {
+                            points += 200;
+                            showBonusEffect("BONUS +200");
+                            Sound.playBonus();
+                        }
+                        
+                        const oldScore = score;
                         score += points; 
+
+                        const oldThreshold = Math.floor(oldScore / 4000);
+                        const newThreshold = Math.floor(score / 4000);
+
+                        if (newThreshold > oldThreshold) {
+                            if (lives >= MAX_LIVES) {
+                                score += 250;
+                                showBonusEffect("BONUS +250");
+                                Sound.playBonus();
+                            } else {
+                                lives = Math.min(MAX_LIVES, lives + 1);
+                                showBonusEffect("LIFE UP!");
+                                Sound.playLifeUp();
+                            }
+                        }
+                        
                         Sound.playHit(); 
                         nextQuestion(); 
                         break; // 弾が消えたのでこの弾の処理は終了
@@ -352,7 +409,7 @@ function gameLoop() {
         }
     }
     scoreEl.innerText = String(score).padStart(6, '0');
-    document.getElementById('lives-display').innerText = '❤'.repeat(Math.max(0, lives));
+    document.getElementById('lives-display').innerText = '❤'.repeat(Math.max(0, Math.min(lives, MAX_LIVES)));
     document.getElementById('health-bar').style.width = (lives / 3) * 100 + "%";
 
     radarBlipsEl.innerHTML = '';
@@ -563,6 +620,9 @@ async function fetchAndRenderRanking() {
 }
 
 function renderRanking(rankedList, container) {
+    const currentPilotName = localStorage.getItem('pilotName') || document.getElementById('input-name').value || 'GUEST';
+    const currentPilotEmail = localStorage.getItem('pilotEmail') || document.getElementById('input-email').value;
+
     let html = `
         <div class="ranking-table">
             <div class="ranking-header">
@@ -571,34 +631,45 @@ function renderRanking(rankedList, container) {
                 <div>SCORE</div>
                 <div>ACCURACY</div>
             </div>
-            ${rankedList.map((p, index) => `
-                <div class="ranking-row">
+            ${rankedList.map((p, index) => {
+                const isMyRank = (p.name === (currentPilotName || 'GUEST').toUpperCase() && p.email === currentPilotEmail);
+                return `<div class="ranking-row ${isMyRank ? 'my-rank' : ''}">
                     <div>#${index + 1}</div>
                     <div class="ranking-pilot-name">${p.name || 'GUEST'}</div>
                     <div>${p.score}</div>
                     <div>${p.accuracy}%</div>
                 </div>
-            `).join('')}
+            `}).join('')}
         </div>
     `;
     container.innerHTML = html;
 }
 
 function renderMyScores(myScores) {
+    // 個人スコアの中から最高スコアを見つける
+    const myBestScore = myScores.reduce((best, current) => {
+        if (!best) return current;
+        if (current.score > best.score) return current;
+        if (current.score === best.score && current.accuracy > best.accuracy) return current;
+        if (current.score === best.score && current.accuracy === best.accuracy && current.hits > best.hits) return current;
+        return best;
+    }, null);
+
     let html = `
         <div class="ranking-table">
-            <div class="ranking-header" style="grid-template-columns: 4fr 3fr 3fr;">
+            <div class="ranking-header" style="grid-template-columns: 4fr 2fr 2fr;">
                 <div>TIMESTAMP</div>
                 <div>SCORE</div>
                 <div>ACCURACY</div>
             </div>
-            ${myScores.map(p => `
-                <div class="ranking-row" style="grid-template-columns: 4fr 3fr 3fr;">
+            ${myScores.map(p => {
+                const isBest = (p === myBestScore);
+                return `<div class="ranking-row ${isBest ? 'my-best-score' : ''}" style="grid-template-columns: 4fr 2fr 2fr;">
                     <div>${p.timestamp}</div>
                     <div>${p.score}</div>
                     <div>${p.accuracy}%</div>
                 </div>
-            `).join('')}
+            `}).join('')}
         </div>
     `;
     myScoresListContainer.innerHTML = html;
@@ -652,6 +723,14 @@ async function initializeApp() {
     }
 }
 
+function showBonusEffect(text) {
+    const el = document.createElement('div');
+    el.className = 'bonus-effect';
+    el.innerText = text;
+    document.getElementById('game-container').appendChild(el);
+    setTimeout(() => el.remove(), 2000);
+}
+
 function shoot() {
     if (gameState !== 'PLAYING' || Date.now() - lastShotTime < shotCooldown) return;
     bullets.push(new Bullet(player.x, player.y)); shotsFired++;
@@ -665,6 +744,26 @@ function resize() { width = window.innerWidth; height = window.innerHeight; canv
 window.addEventListener('resize', resize);
 window.addEventListener('mousemove', e => { if (player) { player.targetX = e.clientX; player.targetY = e.clientY; } });
 window.addEventListener('mousedown', e => { if (gameState === 'PLAYING' && !e.target.closest('.btn') && !e.target.closest('input')) shoot(); });
+window.addEventListener('keydown', e => {
+    if (e.key.toLowerCase() === 'p') {
+        if (gameState === 'PLAYING' || gameState === 'PAUSED') {
+            togglePause();
+        }
+    }
+});
+
+function togglePause() {
+    if (gameState === 'PLAYING') {
+        gameState = 'PAUSED';
+        pauseStartTime = Date.now();
+        document.getElementById('pause-overlay').classList.remove('hidden');
+        Sound.stopEmergency();
+    } else if (gameState === 'PAUSED') {
+        gameState = 'PLAYING';
+        startTime += (Date.now() - pauseStartTime);
+        document.getElementById('pause-overlay').classList.add('hidden');
+    }
+}
 
 function showRanking() {
     startForm.classList.add('hidden');
