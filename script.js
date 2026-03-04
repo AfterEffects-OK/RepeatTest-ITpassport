@@ -633,7 +633,7 @@ function renderRanking(rankedList, container) {
             </div>
             ${rankedList.map((p, index) => {
                 const isMyRank = (p.name === (currentPilotName || 'GUEST').toUpperCase() && p.email === currentPilotEmail);
-                return `<div class="ranking-row ${isMyRank ? 'my-rank' : ''}">
+                return `<div class="ranking-row ${index === 0 ? 'top-rank' : ''} ${isMyRank ? 'my-rank' : ''}">
                     <div>#${index + 1}</div>
                     <div class="ranking-pilot-name">${p.name || 'GUEST'}</div>
                     <div>${p.score}</div>
@@ -656,6 +656,7 @@ function renderMyScores(myScores) {
     }, null);
 
     let html = `
+        <div style="overflow-x: scroll;scrollbar-width: thin; scrollbar-color: var(--primary) transparent;">
         <div class="ranking-table">
             <div class="ranking-header" style="grid-template-columns: 4fr 2fr 2fr;">
                 <div>TIMESTAMP</div>
@@ -664,12 +665,13 @@ function renderMyScores(myScores) {
             </div>
             ${myScores.map(p => {
                 const isBest = (p === myBestScore);
-                return `<div class="ranking-row ${isBest ? 'my-best-score' : ''}" style="grid-template-columns: 4fr 2fr 2fr;">
+                return `<div class="ranking-row ${isBest ? 'my-best-score' : ''} " style="grid-template-columns: 4fr 2fr 2fr;">
                     <div>${p.timestamp}</div>
                     <div>${p.score}</div>
                     <div>${p.accuracy}%</div>
                 </div>
             `}).join('')}
+        </div>
         </div>
     `;
     myScoresListContainer.innerHTML = html;
