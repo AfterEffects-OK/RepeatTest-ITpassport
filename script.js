@@ -861,3 +861,41 @@ if (savedEmail) document.getElementById('input-email').value = savedEmail;
 
 setupTabs();
 initializeApp(); // クイズデータの読み込みを開始
+
+// レティクル（r3）のマウス追従処理（遅延効果付き）
+document.addEventListener('DOMContentLoaded', () => {
+    const reticle = document.querySelector('.floating-reticle.r3');
+    if (!reticle) return;
+    const reticleData = reticle.querySelector('.reticle-data');
+
+    // 初期位置は画面中央
+    let targetX = window.innerWidth / 2;
+    let targetY = window.innerHeight / 2;
+    let currentX = targetX;
+    let currentY = targetY;
+    
+    // 追従の遅延係数（0.01〜1.0）。値が小さいほど遅れてついてくる（慣性が強くなる）
+    const ease = 0.12;
+
+    document.addEventListener('mousemove', (e) => {
+        targetX = e.clientX;
+        targetY = e.clientY;
+    });
+
+    function animateReticle() {
+        // 現在位置を目標位置（マウス）に少しずつ近づける
+        currentX += (targetX - currentX) * ease;
+        currentY += (targetY - currentY) * ease;
+        
+        reticle.style.left = `${currentX}px`;
+        reticle.style.top = `${currentY}px`;
+
+        if (reticleData) {
+            reticleData.innerHTML = `X:${Math.floor(targetX)}<br>Y:${Math.floor(targetY)}`;
+        }
+        
+        requestAnimationFrame(animateReticle);
+    }
+    
+    animateReticle();
+});

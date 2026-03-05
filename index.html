@@ -16,6 +16,23 @@
     <canvas id="gameCanvas"></canvas>
     
     <div id="ui-layer">
+        <div id="scanline-overlay"></div>
+        <div id="hex-overlay"></div>
+
+        <!-- フローティングレティクル -->
+        <div class="floating-reticle r3">
+            <span class="reticle-mark">[]</span>
+            <span class="reticle-data">X:0<br>Y:0</span>
+        </div>
+        
+        <!-- 装飾用エレメント -->
+        <div class="ui-corner top-left"></div>
+        <div class="ui-corner top-right"></div>
+        <div class="ui-corner bottom-left"></div>
+        <div class="ui-corner bottom-right"></div>
+        <div class="side-decoration left"></div>
+        <div class="side-decoration right"></div>
+
         <div class="top-hud">
             <div class="hud-module">
                 <span class="label">PILOT_ID</span>
@@ -64,9 +81,15 @@
                 </div>
             </div>
 
-            <div class="instrument-panel" style="background: rgba(0, 10, 20, 0.85); border: 1px solid var(--primary);">
-                <span class="label" style="text-align: center;">CENTRAL_ANALYZER</span>
-                <p id="question-text">SYSTEM STANDBY...</p>
+            <div style="position: relative;">
+                <div id="central-display" class="instrument-panel">
+                    <span class="label" style="text-align: center;">CENTRAL_ANALYZER</span>
+                    <p id="question-text">SYSTEM STANDBY...</p>
+                </div>
+                <div class="central-bracket tl"></div>
+                <div class="central-bracket tr"></div>
+                <div class="central-bracket bl"></div>
+                <div class="central-bracket br"></div>
             </div>
 
             <div class="instrument-panel" style="flex-direction: row; align-items: center; justify-content: space-between;">
@@ -87,6 +110,21 @@
                     <div id="radar-blips"></div>
                 </div>
             </div>
+        </div>
+        
+        <div class="system-status-line">
+            SYS: ONLINE &nbsp;|&nbsp; NET: SECURE &nbsp;|&nbsp; ENCRYPTION: 256-BIT &nbsp;|&nbsp; VER: 3.4.2
+        </div>
+
+        <div id="data-stream-container">
+            <div class="data-stream-bar"></div>
+            <div class="data-stream-bar"></div>
+            <div class="data-stream-bar"></div>
+            <div class="data-stream-bar"></div>
+            <div class="data-stream-bar"></div>
+            <div class="data-stream-bar"></div>
+            <div class="data-stream-bar"></div>
+            <div class="data-stream-bar"></div>
         </div>
     </div>
 
