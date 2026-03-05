@@ -755,8 +755,6 @@ canvas {
 }
 
 .floating-reticle.r3 { 
-    top: 50%; 
-    left: 50%; 
     animation: blink 1.5s linear infinite;
     display: block;
     width: 0;
