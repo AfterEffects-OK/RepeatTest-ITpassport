@@ -701,7 +701,9 @@ function renderMyScores(myScores) {
             </div>
             ${myScores.map(p => {
                 const isBest = (p === myBestScore);
-                return `<div class="ranking-row ${isBest ? 'my-best-score' : ''}" style="grid-template-columns: 4fr 2fr 2fr;">
+                return `<div class="ranking-row ${isBest ? 'my-best-score' : ''}" 
+                             style="grid-template-columns: 4fr 2fr 2fr; cursor: pointer;"
+                             onclick="showHistoryDetails('${p.id}')" title="クリックして詳細を表示">
                     <div>${p.timestamp}</div>
                     <div>${p.score}</div>
                     <div>${p.accuracy}%</div>
@@ -710,6 +712,62 @@ function renderMyScores(myScores) {
         </div>
     `;
     myScoresListContainer.innerHTML = html;
+}
+
+/**
+ * 過去のスコアIDに基づいて誤答詳細を取得し、モーダルで表示します。
+ */
+async function showHistoryDetails(scoreId) {
+    const modal = document.getElementById('review-modal');
+    const content = document.getElementById('modal-content');
+    
+    // モーダルを表示してロード中メッセージを出す
+    modal.classList.remove('hidden');
+    content.innerHTML = '<p style="text-align:center; color:var(--primary); margin-top: 50px;">ACCESSING ARCHIVE DATA...</p>';
+    
+    try {
+        const response = await fetch(GAS_WEB_APP_URL + `?type=history_details&scoreId=${scoreId}`);
+        if (!response.ok) throw new Error('Network response was not ok');
+        
+        const data = await response.json();
+        
+        if (!data || data.length === 0) {
+            content.innerHTML = `
+                <div style="text-align: center; margin-top: 30px;">
+                    <h3 style="color: var(--success);">PERFECT MISSION</h3>
+                    <p>このミッションでの誤答記録はありません。</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = `
+            <h3 style="color: var(--warning); border-bottom: 1px solid var(--warning); padding-bottom: 10px; letter-spacing: 2px;">MISSION LOG: ERRORS</h3>
+            <div style="margin-top: 20px; max-height: 60vh; overflow-y: auto; padding-right: 10px;">
+        `;
+        
+        data.forEach((item, index) => {
+            html += `
+                <div style="margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-left: 3px solid var(--danger);">
+                    <p style="font-size: 14px; color: rgba(255,255,255,0.8); margin: 0 0 8px 0;">Q: ${item.question}</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
+                        <p style="margin: 0; font-size: 14px;"><span style="color: var(--danger); font-weight: bold;">YOURS:</span> ${item.yourAnswer}</p>
+                        <p style="margin: 0; font-size: 14px;"><span style="color: var(--success); font-weight: bold;">ANSWER:</span> ${item.correctAnswer}</p>
+                    </div>
+                    <p style="margin: 8px 0 0 0; font-size: 13px; color: rgba(255,255,255,0.6); background: rgba(0,0,0,0.2); padding: 8px; line-height: 1.4;">
+                        <span style="color: var(--primary);">解説:</span> ${item.explanation || 'なし'}
+                    </p>
+                </div>
+            `;
+        });
+        
+        html += '</div>';
+        content.innerHTML = html;
+        
+    } catch (e) {
+        console.error("History details fetch error:", e);
+        content.innerHTML = `<p style="text-align:center; color:var(--danger); margin-top: 30px;">DATA CORRUPTED: ${e.message}</p>`;
+    }
 }
 
 async function initializeApp() {
