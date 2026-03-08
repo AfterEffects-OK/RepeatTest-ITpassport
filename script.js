@@ -252,8 +252,26 @@ function nextQuestion() {
         enemies = []; // 敵をクリア
         return;
     }
-    // スプレッドシートから読み込んだデータからランダムに1つ問題を選ぶ
-    const quizFromSheet = questionPool[Math.floor(Math.random() * questionPool.length)];
+    
+    // 重み付き抽選ロジック
+    let totalWeight = 0;
+    questionPool.forEach(q => {
+        q.weight = q.weight || 1; // weightがない場合は1
+        totalWeight += q.weight;
+    });
+
+    let randomValue = Math.random() * totalWeight;
+    let quizFromSheet = null;
+
+    for (const q of questionPool) {
+        randomValue -= q.weight;
+        if (randomValue <= 0) {
+            quizFromSheet = q;
+            break;
+        }
+    }
+    // 誤差対策: 決まらなかった場合は最後の要素を選択
+    if (!quizFromSheet) quizFromSheet = questionPool[questionPool.length - 1];
 
     // 15個以上の不正解プールからランダムに3つを抽出する
     const shuffledDistractors = quizFromSheet.distractorPool.sort(() => 0.5 - Math.random());
@@ -261,6 +279,7 @@ function nextQuestion() {
 
     // 現在の質問オブジェクトを生成
     currentQuiz = {
+        id: quizFromSheet.id, // IDを保持
         q: quizFromSheet.q,
         a: quizFromSheet.a,
         d: selectedDistractors,
@@ -312,6 +331,7 @@ function gameLoop() {
                 lives--;
                 Sound.playError();
                 incorrectlyAnswered.push({
+                    id: currentQuiz.id,
                     question: currentQuiz.q,
                     yourAnswer: '(時間切れ/見逃し)',
                     correctAnswer: currentQuiz.a,
@@ -396,6 +416,7 @@ function gameLoop() {
                         lives--; 
                         Sound.playError(); 
                         incorrectlyAnswered.push({
+                            id: currentQuiz.id,
                             question: currentQuiz.q,
                             yourAnswer: en.text,
                             correctAnswer: currentQuiz.a,
@@ -511,7 +532,12 @@ function showGameOver() {
         score: score,
         elapsedTime: timerEl.innerText,
         accuracy: acc,
-        hits: shotsHit
+        hits: shotsHit,
+        incorrectDetails: incorrectlyAnswered.map(item => ({
+            id: item.id,
+            question: item.question,
+            wrongAnswer: item.yourAnswer
+        }))
     };
     submitScore(finalScoreData);
 
@@ -692,7 +718,14 @@ async function initializeApp() {
     startBtn.disabled = true;
     startBtn.innerText = 'LOADING QUIZ DATA...';
 
-    const url = GAS_WEB_APP_URL + '?type=quiz';
+    // 保存されたメールアドレスがあれば、それをパラメータに追加して
+    // サーバー側で誤答履歴に基づいた重み付けを行ってもらう
+    const savedEmail = localStorage.getItem('pilotEmail');
+    let url = GAS_WEB_APP_URL + '?type=quiz';
+    if (savedEmail) {
+        url += `&email=${encodeURIComponent(savedEmail)}`;
+    }
+
     try {
         const response = await fetch(url);
         if (!response.ok) throw new Error('Network response was not ok');
