@@ -727,6 +727,13 @@ function renderMyScores(myScores) {
 }
 
 /**
+ * 履歴詳細の単一表示からサマリー表示に戻ります。
+ */
+function goBackToSummary() {
+    renderHistoryDetails(window.currentHistoryDetails);
+}
+
+/**
  * 履歴詳細モーダル内で、個別の誤答カードを単独表示します。
  * @param {number} index - window.currentHistoryDetails 配列内のインデックス
  */
@@ -735,10 +742,9 @@ function showSingleHistoryDetail(index) {
     if (!item) return;
 
     const content = document.getElementById('modal-content');
-    const originalScoreId = window.currentHistoryScoreId;
 
     content.innerHTML = `
-        <button onclick="showHistoryDetails('${originalScoreId}')" class="btn" style="position: absolute; top: 70px; right: 20px; width: auto; padding: 5px 15px; font-size: 14px;">◀ BACK TO SUMMARY</button>
+        <button onclick="goBackToSummary()" class="btn" style="position: absolute; top: 70px; right: 20px; width: auto; padding: 5px 15px; font-size: 14px;">◀ BACK TO SUMMARY</button>
         <div style="margin-top: 40px;">
             <div style="margin-bottom: 30px;">
                 <p style="color: var(--primary); font-size: 14px; margin-bottom: 5px; font-weight: bold;">QUESTION</p>
