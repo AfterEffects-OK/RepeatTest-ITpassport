@@ -128,6 +128,7 @@ let lastShotTime = 0;
 let pilotEmail = "";
 const shotCooldown = 250;
 const MAX_LIVES = 3;
+let mousePos = { x: window.innerWidth / 2, y: window.innerHeight / 2 };
 // TODO: 上記の.gsファイルをデプロイして取得したウェブアプリのURLをここに設定してください。
 const GAS_WEB_APP_URL = 'https://script.google.com/macros/s/AKfycbwVjD65x3sD8ACec6Z2C2svyN959x-Ck2U2khZDy8oKC1YdppdpbcBVrcn4HSjkbmuD/exec';
 
@@ -915,7 +916,15 @@ function resize() { width = window.innerWidth; height = window.innerHeight; canv
 // --- イベントリスナーと初期化 ---
 
 window.addEventListener('resize', resize);
-window.addEventListener('mousemove', e => { if (player) { player.targetX = e.clientX; player.targetY = e.clientY; } });
+window.addEventListener('mousemove', e => {
+    mousePos.x = e.clientX;
+    mousePos.y = e.clientY;
+
+    if (player) {
+        player.targetX = mousePos.x;
+        player.targetY = mousePos.y;
+    }
+});
 window.addEventListener('mousedown', e => { if (gameState === 'PLAYING' && !e.target.closest('.btn') && !e.target.closest('input')) shoot(); });
 window.addEventListener('keydown', e => {
     if (e.key.toLowerCase() === 'p') {
@@ -1029,35 +1038,29 @@ document.addEventListener('DOMContentLoaded', () => {
     const reticle = document.querySelector('.floating-reticle.r3');
     if (!reticle) return;
     const reticleData = reticle.querySelector('.reticle-data');
-
-    // 初期位置は画面中央
-    let targetX = window.innerWidth / 2;
-    let targetY = window.innerHeight / 2;
-    let currentX = targetX;
-    let currentY = targetY;
     
+    let currentX = mousePos.x;
+    let currentY = mousePos.y;
+
     // 追従の遅延係数（0.01〜1.0）。値が小さいほど遅れてついてくる（慣性が強くなる）
     const ease = 0.12;
 
-    document.addEventListener('mousemove', (e) => {
-        targetX = e.clientX;
-        targetY = e.clientY;
-    });
-
     function animateReticle() {
+        const targetX = mousePos.x;
+        const targetY = mousePos.y;
+
         // 現在位置を目標位置（マウス）に少しずつ近づける
         currentX += (targetX - currentX) * ease;
         currentY += (targetY - currentY) * ease;
         
         reticle.style.left = `${currentX}px`;
         reticle.style.top = `${currentY}px`;
-
+        
         if (reticleData) {
             reticleData.innerHTML = `X:${Math.floor(targetX)}<br>Y:${Math.floor(targetY)}`;
         }
         
         requestAnimationFrame(animateReticle);
     }
-    
     animateReticle();
 });
