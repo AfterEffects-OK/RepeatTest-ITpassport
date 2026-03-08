@@ -707,19 +707,21 @@ function renderMyScores(myScores) {
 
     let html = `
         <div class="ranking-table">
-            <div class="ranking-header" style="grid-template-columns: 4fr 2fr 2fr;">
+            <div class="ranking-header" style="grid-template-columns: 4fr 2fr 2fr 0.5fr;">
                 <div>TIMESTAMP</div>
                 <div>SCORE</div>
                 <div>ACCURACY</div>
+                <div></div>
             </div>
             ${myScores.map(p => {
                 const isBest = (p === myBestScore);
                 return `<div class="ranking-row ${isBest ? 'my-best-score' : ''}" 
-                             style="grid-template-columns: 4fr 2fr 2fr; cursor: pointer;"
+                             style="grid-template-columns: 4fr 2fr 2fr 0.5fr; cursor: pointer;"
                              onclick="showHistoryDetails('${p.id}')" title="クリックして詳細を表示">
                     <div>${p.timestamp}</div>
                     <div>${p.score}</div>
                     <div>${p.accuracy}%</div>
+                    <div style="text-align: center; font-size: 12px; opacity: 0.7;">▶</div>
                 </div>
             `}).join('')}
         </div>

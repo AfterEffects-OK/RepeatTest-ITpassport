@@ -642,6 +642,7 @@ canvas {
     padding: 12px 10px;
     border-bottom: 1px solid rgba(79, 172, 254, 0.2);
     align-items: center;
+    transition: all 0.2s ease-in-out;
 }
 
 .ranking-header {
@@ -667,6 +668,13 @@ canvas {
     background: rgba(255, 204, 0, 0.05);
     border-left: 2px solid var(--warning);
     transform: scale(1.01);
+}
+
+.ranking-row[onclick]:hover {
+    background: rgba(0, 242, 254, 0.1);
+    box-shadow: 0 0 15px var(--ui-glow);
+    transform: scale(1.02);
+    border-color: rgba(0, 242, 254, 0.5);
 }
 
 .ranking-row.my-rank {
