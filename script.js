@@ -737,7 +737,7 @@ function showSingleHistoryDetail(index) {
     const originalScoreId = window.currentHistoryScoreId;
 
     content.innerHTML = `
-        <button onclick="showHistoryDetails('${originalScoreId}')" class="btn" style="position: absolute; top: 20px; left: 20px; width: auto; padding: 5px 15px; font-size: 14px;">◀ BACK TO SUMMARY</button>
+        <button onclick="showHistoryDetails('${originalScoreId}')" class="btn" style="position: absolute; top: 70px; right: 20px; width: auto; padding: 5px 15px; font-size: 14px;">◀ BACK TO SUMMARY</button>
         <div style="margin-top: 40px;">
             <div style="margin-bottom: 30px;">
                 <p style="color: var(--primary); font-size: 14px; margin-bottom: 5px; font-weight: bold;">QUESTION</p>
