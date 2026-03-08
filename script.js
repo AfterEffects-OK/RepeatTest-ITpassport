@@ -111,6 +111,10 @@ const rankingOverlay = document.getElementById('ranking-overlay');
 const rankingListContainer = document.getElementById('ranking-list-container');
 const myScoresListContainer = document.getElementById('my-scores-list-container');
 
+// 履歴詳細モーダル用の状態保持
+window.currentHistoryDetails = [];
+window.currentHistoryScoreId = null;
+
 let width, height;
 let player = null, bullets = [], enemies = [];
 let score = 0, lives = 3, startTime = 0, gameElapsedTime = 0;
@@ -284,10 +288,17 @@ function nextQuestion() {
         a: quizFromSheet.a,
         d: selectedDistractors,
         explanation: quizFromSheet.explanation, // 解説とカテゴリも保持
-        category: quizFromSheet.category
+        category: quizFromSheet.category,
+        errorCount: quizFromSheet.errorCount || 0
     };
 
-    questionEl.innerText = currentQuiz.q; 
+    // 過去に間違えたことがある場合は警告を表示
+    if (currentQuiz.errorCount > 0) {
+        questionEl.innerHTML = `<div style="color: var(--danger); font-size: 14px; font-weight: bold; margin-bottom: 8px; letter-spacing: 1px; animation: blink 1s infinite alternate;">⚠ CAUTION: PAST ERROR DETECTED (x${currentQuiz.errorCount})</div>${currentQuiz.q}`;
+    } else {
+        questionEl.innerText = currentQuiz.q;
+    }
+    
     enemies = [];
     const opts = [currentQuiz.a, ...currentQuiz.d].sort(() => Math.random() - 0.5); const dirs = [{c:-1,r:-1}, {c:1,r:-1}, {c:-1,r:1}, {c:1,r:1}];
     opts.forEach((o, i) => enemies.push(new Enemy(o, o === currentQuiz.a, dirs[i].c, dirs[i].r)));
@@ -715,11 +726,52 @@ function renderMyScores(myScores) {
 }
 
 /**
+ * 履歴詳細モーダル内で、個別の誤答カードを単独表示します。
+ * @param {number} index - window.currentHistoryDetails 配列内のインデックス
+ */
+function showSingleHistoryDetail(index) {
+    const item = window.currentHistoryDetails[index];
+    if (!item) return;
+
+    const content = document.getElementById('modal-content');
+    const originalScoreId = window.currentHistoryScoreId;
+
+    content.innerHTML = `
+        <button onclick="showHistoryDetails('${originalScoreId}')" class="btn" style="position: absolute; top: 20px; left: 20px; width: auto; padding: 5px 15px; font-size: 14px;">◀ BACK TO SUMMARY</button>
+        <div style="margin-top: 40px;">
+            <div style="margin-bottom: 30px;">
+                <p style="color: var(--primary); font-size: 14px; margin-bottom: 5px; font-weight: bold;">QUESTION</p>
+                <p style="font-size: 24px; line-height: 1.4; margin: 0;">${item.question}</p>
+            </div>
+            
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 30px;">
+                <div style="background: rgba(255, 75, 43, 0.1); padding: 15px; border: 1px solid var(--danger);">
+                    <p style="color: var(--danger); font-size: 14px; margin-bottom: 5px; font-weight: bold;">YOUR ANSWER</p>
+                    <p style="font-size: 20px; margin: 0;">${item.yourAnswer}</p>
+                </div>
+                <div style="background: rgba(0, 255, 135, 0.1); padding: 15px; border: 1px solid var(--success);">
+                    <p style="color: var(--success); font-size: 14px; margin-bottom: 5px; font-weight: bold;">CORRECT ANSWER</p>
+                    <p style="font-size: 20px; margin: 0;">${item.correctAnswer}</p>
+                </div>
+            </div>
+            
+            <div style="background: rgba(255, 255, 255, 0.05); padding: 20px; border-left: 4px solid var(--primary);">
+                <p style="color: var(--primary); font-size: 14px; margin-bottom: 10px; font-weight: bold;">EXPLANATION</p>
+                <p style="font-size: 22px; line-height: 1.6; margin: 0;">${item.explanation || '解説はありません。'}</p>
+            </div>
+        </div>
+    `;
+}
+
+/**
  * 過去のスコアIDに基づいて誤答詳細を取得し、モーダルで表示します。
  */
 async function showHistoryDetails(scoreId) {
     const modal = document.getElementById('review-modal');
     const content = document.getElementById('modal-content');
+    
+    // スコアIDと詳細データをグローバルに保存して、単一表示からの「戻る」に対応
+    window.currentHistoryScoreId = scoreId;
     
     // モーダルを表示してロード中メッセージを出す
     modal.classList.remove('hidden');
@@ -730,6 +782,9 @@ async function showHistoryDetails(scoreId) {
         if (!response.ok) throw new Error('Network response was not ok');
         
         const data = await response.json();
+        
+        // データを保存
+        window.currentHistoryDetails = data;
         
         if (!data || data.length === 0) {
             content.innerHTML = `
@@ -748,15 +803,12 @@ async function showHistoryDetails(scoreId) {
         
         data.forEach((item, index) => {
             html += `
-                <div style="margin-bottom: 20px; background: rgba(255,255,255,0.03); padding: 15px; border-left: 3px solid var(--danger);">
-                    <p style="font-size: 14px; color: rgba(255,255,255,0.8); margin: 0 0 8px 0;">Q: ${item.question}</p>
-                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 8px;">
+                <div class="review-card" onclick="showSingleHistoryDetail(${index})" style="margin-bottom: 15px; background: rgba(255,255,255,0.03); padding: 12px;">
+                    <p style="font-size: 14px; color: rgba(255,255,255,0.8); margin: 0 0 8px 0; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Q: ${item.question}</p>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
                         <p style="margin: 0; font-size: 14px;"><span style="color: var(--danger); font-weight: bold;">YOURS:</span> ${item.yourAnswer}</p>
-                        <p style="margin: 0; font-size: 14px;"><span style="color: var(--success); font-weight: bold;">ANSWER:</span> ${item.correctAnswer}</p>
+                        <p style="text-align: right; font-size: 10px; color: var(--primary); opacity: 0.7;">▶ CLICK TO EXPAND</p>
                     </div>
-                    <p style="margin: 8px 0 0 0; font-size: 13px; color: rgba(255,255,255,0.6); background: rgba(0,0,0,0.2); padding: 8px; line-height: 1.4;">
-                        <span style="color: var(--primary);">解説:</span> ${item.explanation || 'なし'}
-                    </p>
                 </div>
             `;
         });
