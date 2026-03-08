@@ -114,6 +114,7 @@ const myScoresListContainer = document.getElementById('my-scores-list-container'
 // 履歴詳細モーダル用の状態保持
 window.currentHistoryDetails = [];
 window.currentHistoryScoreId = null;
+const historyDetailsCache = {};
 
 let width, height;
 let player = null, bullets = [], enemies = [];
@@ -775,51 +776,63 @@ async function showHistoryDetails(scoreId) {
     
     // モーダルを表示してロード中メッセージを出す
     modal.classList.remove('hidden');
-    content.innerHTML = '<p style="text-align:center; color:var(--primary); margin-top: 50px;">ACCESSING ARCHIVE DATA...</p>';
-    
+
+    // キャッシュを確認
+    if (historyDetailsCache[scoreId]) {
+        renderHistoryDetails(historyDetailsCache[scoreId]);
+        return;
+    }
+
+    content.innerHTML = '<p style="text-align:center; color:var(--primary); margin-top: 50px;">ACCESSING ARCHIVE DATA...</p>';    
     try {
         const response = await fetch(GAS_WEB_APP_URL + `?type=history_details&scoreId=${scoreId}`);
         if (!response.ok) throw new Error('Network response was not ok');
         
         const data = await response.json();
         
-        // データを保存
-        window.currentHistoryDetails = data;
-        
-        if (!data || data.length === 0) {
-            content.innerHTML = `
-                <div style="text-align: center; margin-top: 30px;">
-                    <h3 style="color: var(--success);">PERFECT MISSION</h3>
-                    <p>このミッションでの誤答記録はありません。</p>
-                </div>
-            `;
-            return;
-        }
-        
-        let html = `
-            <h3 style="color: var(--warning); border-bottom: 1px solid var(--warning); padding-bottom: 10px; letter-spacing: 2px;">MISSION LOG: ERRORS</h3>
-            <div style="margin-top: 20px; max-height: 60vh; overflow-y: auto; padding-right: 10px;">
-        `;
-        
-        data.forEach((item, index) => {
-            html += `
-                <div class="review-card" onclick="showSingleHistoryDetail(${index})" style="margin-bottom: 15px; background: rgba(255,255,255,0.03); padding: 12px;">
-                    <p style="font-size: 14px; color: rgba(255,255,255,0.8); margin: 0 0 8px 0; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Q: ${item.question}</p>
-                    <div style="display: flex; justify-content: space-between; align-items: center;">
-                        <p style="margin: 0; font-size: 14px;"><span style="color: var(--danger); font-weight: bold;">YOURS:</span> ${item.yourAnswer}</p>
-                        <p style="text-align: right; font-size: 10px; color: var(--primary); opacity: 0.7;">▶ CLICK TO EXPAND</p>
-                    </div>
-                </div>
-            `;
-        });
-        
-        html += '</div>';
-        content.innerHTML = html;
+        // 取得したデータをキャッシュに保存
+        historyDetailsCache[scoreId] = data;
+        renderHistoryDetails(data);
         
     } catch (e) {
         console.error("History details fetch error:", e);
         content.innerHTML = `<p style="text-align:center; color:var(--danger); margin-top: 30px;">DATA CORRUPTED: ${e.message}</p>`;
     }
+}
+
+function renderHistoryDetails(data) {
+    const content = document.getElementById('modal-content');
+    window.currentHistoryDetails = data; // 単一表示機能のためにグローバルにも保持
+
+    if (!data || data.length === 0) {
+        content.innerHTML = `
+            <div style="text-align: center; margin-top: 30px;">
+                <h3 style="color: var(--success);">PERFECT MISSION</h3>
+                <p>このミッションでの誤答記録はありません。</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = `
+        <h3 style="color: var(--warning); border-bottom: 1px solid var(--warning); padding-bottom: 10px; letter-spacing: 2px;">MISSION LOG: ERRORS</h3>
+        <div style="margin-top: 20px; max-height: 60vh; overflow-y: auto; padding-right: 10px;">
+    `;
+    
+    data.forEach((item, index) => {
+        html += `
+            <div class="review-card" onclick="showSingleHistoryDetail(${index})" style="margin-bottom: 15px; background: rgba(255,255,255,0.03); padding: 12px;">
+                <p style="font-size: 14px; color: rgba(255,255,255,0.8); margin: 0 0 8px 0; line-height: 1.4; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">Q: ${item.question}</p>
+                <div style="display: flex; justify-content: space-between; align-items: center;">
+                    <p style="margin: 0; font-size: 14px;"><span style="color: var(--danger); font-weight: bold;">YOURS:</span> ${item.yourAnswer}</p>
+                    <p style="text-align: right; font-size: 10px; color: var(--primary); opacity: 0.7;">▶ CLICK TO EXPAND</p>
+                </div>
+            </div>
+        `;
+    });
+    
+    html += '</div>';
+    content.innerHTML = html;
 }
 
 async function initializeApp() {
