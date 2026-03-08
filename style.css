@@ -191,7 +191,9 @@ canvas {
     right: 0; bottom: 0;
     pointer-events: none;
     background: 
-        linear-gradient(to top right, transparent calc(50% - 0.5px), var(--primary) 50%, transparent calc(50% + 0.5px)) top left / 20px 20px no-repeat,
+        /* Top-left corner bracket */
+        linear-gradient(var(--primary), var(--primary)) top 5px left 5px / 2px 15px no-repeat, /* vertical line */
+        linear-gradient(var(--primary), var(--primary)) top 5px left 5px / 15px 2px no-repeat, /* horizontal line */
         linear-gradient(var(--primary), var(--primary)) bottom right / 2px 10px no-repeat,
         linear-gradient(var(--primary), var(--primary)) bottom right / 10px 2px no-repeat;
     opacity: 0.7;
