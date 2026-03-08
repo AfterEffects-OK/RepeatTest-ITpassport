@@ -166,6 +166,7 @@ canvas {
     transition: background 0.3s;
     box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
     animation: grid-pan 8s linear infinite;
+    clip-path: polygon(8px 0, 100% 0, 100% 100%, 0 100%, 0 8px);
 }
 
 .hud-module:hover {
